@@ -252,11 +252,29 @@
 			};
 		};
 	};
+//huaqin add by tangqingyong for ZQL1830-638 at 20180831 start
+	pa-therm1 {
+		polling-delay-passive = <0>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm8953_vadc 0x11>;
+		thermal-governor = "user_space";
+
+		trips {
+			active-config0 {
+				temperature = <65000>;
+				hysteresis = <1000>;
+				type = "passive";
+			};
+		};
+	};
+//huaqin add by tangqingyong for ZQL1830-638 at 20180831 end
 
 	case-therm-adc {
 		polling-delay-passive = <0>;
 		polling-delay = <0>;
-		thermal-sensors = <&pm8953_vadc 0x13>;
+//huaqin add by tangqingyong for ZQL1830-638 at 20180905 start
+		thermal-sensors = <&pm8953_adc_tm 0x13>;
+//huaqin add by tangqingyong for ZQL1830-638 at 20180905 end
 		thermal-governor = "user_space";
 
 		trips {

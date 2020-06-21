@@ -173,12 +173,12 @@
 		cam_sensor_rear_default: cam_sensor_rear_default {
 			/* RESET, STANDBY */
 			mux {
-				pins = "gpio40", "gpio39";
+				pins = "gpio40";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio40","gpio39";
+				pins = "gpio40";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -187,40 +187,12 @@
 		cam_sensor_rear_sleep: cam_sensor_rear_sleep {
 			/* RESET, STANDBY */
 			mux {
-				pins = "gpio40","gpio39";
+				pins = "gpio40";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio40","gpio39";
-				bias-disable; /* No PULL */
-				drive-strength = <2>; /* 2 MA */
-			};
-		};
-
-		cam_sensor_ir_cut_default: cam_sensor_ir_cut_default {
-			/* RESET, STANDBY */
-			mux {
-				pins = "gpio38", "gpio39";
-				function = "gpio";
-			};
-
-			config {
-				pins = "gpio38","gpio39";
-				bias-pull-up; /* No PULL */
-				drive-strength = <2>; /* 2 MA */
-			};
-		};
-
-		cam_sensor_ir_cut_sleep: cam_sensor_ir_cut_sleep {
-			/* RESET, STANDBY */
-			mux {
-				pins = "gpio38","gpio39";
-				function = "gpio";
-			};
-
-			config {
-				pins = "gpio38","gpio39";
+				pins = "gpio40";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -345,12 +317,12 @@
 		cam_sensor_front1_default: cam_sensor_front1_default {
 			/* RESET, STANDBY */
 			mux {
-				pins = "gpio129", "gpio130";
+				pins = "gpio129";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio129", "gpio130";
+				pins = "gpio129";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -359,12 +331,12 @@
 		cam_sensor_front1_sleep: cam_sensor_front1_sleep {
 			/* RESET, STANDBY */
 			mux {
-				pins = "gpio129", "gpio130";
+				pins = "gpio129";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio129", "gpio130";
+				pins = "gpio129";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -1318,24 +1290,24 @@
 		pri-tlmm-lines {
 			pri_tlmm_lines_act: pri_tlmm_lines_act {
 				mux {
-					pins = "gpio91", "gpio93";
+					pins = "gpio91", "gpio93", "gpio88";
 					function = "pri_mi2s";
 				};
 
 				config {
-					pins = "gpio91", "gpio93";
+					pins = "gpio91", "gpio93", "gpio88";
 					drive-strength = <8>;
 				};
 			};
 
 			pri_tlmm_lines_sus: pri_tlmm_lines_sus {
 				mux {
-					pins = "gpio91", "gpio93";
+					pins = "gpio91", "gpio93", "gpio88";
 					function = "pri_mi2s";
 				};
 
 				config {
-					pins = "gpio91", "gpio93";
+					pins = "gpio91", "gpio93", "gpio88";
 					drive-strength = <2>;
 					bias-pull-down;
 				};
@@ -1957,5 +1929,121 @@
 				input-disable;
 			};
 		};
+
+		/* Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/17 start */
+		cdfinger_reset {
+			cdfinger_reset_active: cdfinger_reset_active {
+				mux {
+					pins = "gpio140";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio140";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+			};
+
+			cdfinger_reset_sleep: cdfinger_reset_sleep {
+				mux {
+					pins = "gpio140";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio140";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+			};
+		};
+
+		cdfinger_irq {
+			cdfinger_irq_active: cdfinger_irq_active {
+				mux {
+					pins = "gpio48";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio48";
+					drive-strength = <2>;
+					bias-disable;
+				};
+			};
+
+			cdfinger_irq_sleep: cdfinger_irq_sleep {
+				mux {
+					pins = "gpio48";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio48";
+					drive-strength = <2>;
+					bias-disable;
+				};
+			};
+		};
+		/* Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/17 end */
+
+		/* Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/26 start */
+		focalfp_reset {
+			focalfp_reset_active: focalfp_reset_active {
+				mux {
+					pins = "gpio140";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio140";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+			};
+
+			focalfp_reset_sleep: focalfp_reset_sleep {
+				mux {
+					pins = "gpio140";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio140";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+			};
+		};
+
+		focalfp_irq {
+			focalfp_irq_active: focalfp_irq_active {
+				mux {
+					pins = "gpio48";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio48";
+					drive-strength = <2>;
+					bias-disable;
+				};
+			};
+
+			focalfp_irq_sleep: focalfp_irq_sleep {
+				mux {
+					pins = "gpio48";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio48";
+					drive-strength = <2>;
+					bias-disable;
+				};
+			};
+		};
+		/* Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/26 end */
 	};
 };

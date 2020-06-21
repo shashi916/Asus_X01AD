@@ -181,6 +181,7 @@
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
 			qcom,init-voltage = <1800000>;
+			regulator-always-on;
 			status = "okay";
 		};
 	};
@@ -210,6 +211,9 @@
 			regulator-min-microvolt = <2900000>;
 			regulator-max-microvolt = <2900000>;
 			qcom,init-voltage = <2900000>;
+			/*Huaqin modify for PA22A I2C read error by yangliguo at 2018/08/03 start */
+			regulator-always-on;
+			/*Huaqin modify for PA22A I2C read error by yangliguo at 2018/08/03 end */
 			status = "okay";
 		};
 	};
@@ -230,6 +234,9 @@
 			regulator-min-microvolt = <2850000>;
 			regulator-max-microvolt = <2850000>;
 			qcom,init-voltage = <2850000>;
+			/* Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/17 start */
+			regulator-always-on;
+			/* Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/17 start */
 			status = "okay";
 		};
 	};
@@ -308,7 +315,9 @@
 		status = "okay";
 		pm8953_l23: regulator-l23 {
 			regulator-min-microvolt = <975000>;
-			regulator-max-microvolt = <1225000>;
+			/*Huaqin add for HQ000003 by likai at 2018/12/05 start*/
+			regulator-max-microvolt = <1250000>;
+			/*Huaqin add for HQ000003 by likai at 2018/12/05 end*/
 			qcom,init-voltage = <975000>;
 			status = "okay";
 		};

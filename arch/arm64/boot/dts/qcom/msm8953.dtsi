@@ -68,7 +68,9 @@
 		other_ext_mem: other_ext_region@0 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x85b00000 0x0 0xd00000>;
+			/*Huaqin modify for TA mem by zhaojunhai1 at 2018/09/26 start*/
+			reg = <0x0 0x84a00000 0x0 0x1e00000>;
+			/*Huaqin modify for TA mem by zhaojunhai1 at 2018/09/26 end*/
 		};
 
 		modem_mem: modem_region@0 {
@@ -433,9 +435,11 @@
 		#thermal-sensor-cells = <1>;
 	};
 
-	qcom_seecom: qseecom@85b00000 {
+/*Huaqin modify for TA mem by zhaojunhai1 at 2018/09/26 start*/
+	qcom_seecom: qseecom@84a00000 {
 		compatible = "qcom,qseecom";
-		reg = <0x85b00000 0x800000>;
+		reg = <0x84a00000 0x1900000>;
+/*Huaqin modify for TA mem by zhaojunhai1 at 2018/09/26 end*/
 		reg-names = "secapp-region";
 		qcom,hlos-num-ce-hw-instances = <1>;
 		qcom,hlos-ce-hw-instance = <0>;
@@ -807,8 +811,8 @@
 		pinctrl-names = "i2c_active", "i2c_sleep";
 		pinctrl-0 = <&i2c_3_active>;
 		pinctrl-1 = <&i2c_3_sleep>;
-		qcom,noise-rjct-scl = <0>;
-		qcom,noise-rjct-sda = <0>;
+		qcom,noise-rjct-scl = <3>; // 0
+		qcom,noise-rjct-sda = <3>; // 0
 		qcom,master-id = <86>;
 		dmas = <&dma_blsp1 8 64 0x20000020 0x20>,
 			<&dma_blsp1 9 32 0x20000020 0x20>;
