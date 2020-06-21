@@ -1,4 +1,5 @@
-/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+
+/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -496,6 +497,82 @@ static const struct qpnp_vadc_map_pt adcmap_100k_104ef_104fb[] = {
 };
 
 /* Voltage to temperature */
+//huaqin add by tangqingyong for ZQL1830-412 NTC batt-therm config start
+static const struct qpnp_vadc_map_pt adcmap_batt_term_pu30_b3435[] = {
+	{	1673	,	-400	},
+	{	1649	,	-380	},
+	{	1623	,	-360	},
+	{	1596	,	-340	},
+	{	1566	,	-320	},
+	{	1535	,	-300	},
+	{	1502	,	-280	},
+	{	1467	,	-260	},
+	{	1430	,	-240	},
+	{	1392	,	-220	},
+	{	1352	,	-200	},
+	{	1311	,	-180	},
+	{	1269	,	-160	},
+	{	1226	,	-140	},
+	{	1182	,	-120	},
+	{	1138	,	-100	},
+	{	1093	,	-80 },
+	{	1049	,	-60 },
+	{	1004	,	-40 },
+	{	960 ,		-20 },
+	{	917 ,		0	},
+	{	874 ,		20	},
+	{	832 ,		40	},
+	{	791 ,		60	},
+	{	752 ,		80	},
+	{	713 ,		100 },
+	{	676 ,		120 },
+	{	640 ,		140 },
+	{	606 ,		160 },
+	{	573 ,		180 },
+	{	541 ,		200 },
+	{	511 ,		220 },
+	{	483 ,		240 },
+	{	455 ,		260 },
+	{	430 ,		280 },
+	{	405 ,		300 },
+	{	382 ,		320 },
+	{	360 ,		340 },
+	{	340 ,		360 },
+	{	320 ,		380 },
+	{	302 ,		400 },
+	{	285 ,		420 },
+	{	269 ,		440 },
+	{	253 ,		460 },
+	{	239 ,		480 },
+	{	225 ,		500 },
+	{	213 ,		520 },
+	{	201 ,		540 },
+	{	190 ,		560 },
+	{	179 ,		580 },
+	{	169 ,		600 },
+	{	160 ,		620 },
+	{	152 ,		640 },
+	{	143 ,		660 },
+	{	136 ,		680 },
+	{	128 ,		700 },
+	{	122 ,		720 },
+	{	115 ,		740 },
+	{	109 ,		760 },
+	{	104 ,		780 },
+	{	98	,	800 },
+	{	93	,	820 },
+	{	89	,	840 },
+	{	84	,	860 },
+	{	80	,	880 },
+	{	76	,	900 },
+	{	73	,	920 },
+	{	69	,	940 },
+	{	66	,	960 },
+	{	63	,	980 },
+
+};
+//huaqin add by tangqingyong for ZQL1830-412 NTC batt-therm config end
+
 static const struct qpnp_vadc_map_pt adcmap_150k_104ef_104fb[] = {
 	{1738,	-40000},
 	{1714,	-35000},
@@ -1683,6 +1760,40 @@ int32_t qpnp_adc_scale_smb_batt_therm(struct qpnp_vadc_chip *chip,
 			&adc_chan_result->physical);
 }
 EXPORT_SYMBOL(qpnp_adc_scale_smb_batt_therm);
+//huaqin add by tangqingyong for ZQL1830-412 NTC batt-therm config start
+int32_t qpnp_adc_batt_therm_B3435_pu30(struct qpnp_vadc_chip *chip,
+		int32_t adc_code,
+		const struct qpnp_adc_properties *adc_properties,
+		const struct qpnp_vadc_chan_properties *chan_properties,
+		struct qpnp_vadc_result *adc_chan_result)
+{
+	int64_t batt_thm_voltage = 0;
+
+	if (!chan_properties || !chan_properties->offset_gain_numerator ||
+		!chan_properties->offset_gain_denominator ||
+		!adc_properties ||!adc_chan_result)
+		return -EINVAL;
+
+	/* (code * vref_vadc (1.875V) * 1000) / (scale_code * 1000) */
+	if (adc_code > QPNP_VADC_HC_MAX_CODE)
+		adc_code = 0;
+
+	batt_thm_voltage = (int64_t) adc_code;
+	batt_thm_voltage *= (adc_properties->adc_vdd_reference* 1000);
+	batt_thm_voltage = div64_s64(batt_thm_voltage,
+	adc_properties->full_scale_code * 1000);
+
+	qpnp_adc_map_voltage_temp(
+	adcmap_batt_term_pu30_b3435,
+	ARRAY_SIZE(adcmap_batt_term_pu30_b3435),
+	batt_thm_voltage,
+	&adc_chan_result->physical);
+
+	return 0;
+
+}
+EXPORT_SYMBOL(qpnp_adc_batt_therm_B3435_pu30);
+//huaqin add by tangqingyong for ZQL1830-412 NTC batt-therm config end
 
 int32_t qpnp_adc_scale_therm_pu1(struct qpnp_vadc_chip *chip,
 		int32_t adc_code,

@@ -77,7 +77,9 @@ struct msm_pinctrl {
 	phys_addr_t spi_cfg_regs;
 	phys_addr_t spi_cfg_end;
 };
-
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 start */
+int g_resume_from_fp = 0;
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 end */
 static struct msm_pinctrl *msm_pinctrl_data;
 
 static int msm_get_groups_count(struct pinctrl_dev *pctldev)
@@ -1701,6 +1703,9 @@ static void msm_pinctrl_resume(void)
 		return;
 
 	spin_lock_irqsave(&pctrl->lock, flags);
+    /* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 start */
+	g_resume_from_fp = 0;
+    /* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 start */
 	for_each_set_bit(i, pctrl->enabled_irqs, pctrl->chip.ngpio) {
 		g = &pctrl->soc->groups[i];
 		val = readl_relaxed(pctrl->regs + g->intr_status_reg);
@@ -1713,6 +1718,12 @@ static void msm_pinctrl_resume(void)
 				name = desc->action->name;
 
 			pr_warn("%s: %d triggered %s\n", __func__, irq, name);
+			/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 start */
+			if (irq == 154) {
+				pr_info("%s: fingerprint triggered resume.\n", __func__);
+				g_resume_from_fp = 1;
+			}
+            /* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 end */
 		}
 	}
 	spin_unlock_irqrestore(&pctrl->lock, flags);

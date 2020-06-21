@@ -140,9 +140,15 @@
 #define QPNP_VADC_HC1_ADC_CH_SEL_CTL				0x44
 #define QPNP_VADC_HC1_DELAY_CTL					0x45
 #define QPNP_VADC_HC1_DELAY_CTL_MASK				0xf
+//huaqin added by tangqingyong for ZQL1830-524 USB_IN_V and REG_GND consecutive read confuse sometimes at 20180810 start
+//#define QPNP_VADC_MC1_EN_CTL1					0x46
 #define QPNP_VADC_HC1_EN_CTL1					0x46
+//huaqin added by tangqingyong for ZQL1830-524 USB_IN_V and REG_GND consecutive read confuse sometimes at 20180810 end
 #define QPNP_VADC_HC1_ADC_EN					BIT(7)
+//huaqin added by tangqingyong for ZQL1830-524 USB_IN_V and REG_GND consecutive read confuse sometimes at 20180810 start
+//#define QPNP_VADC_MC1_CONV_REQ					0x47
 #define QPNP_VADC_HC1_CONV_REQ					0x47
+//huaqin added by tangqingyong for ZQL1830-524 USB_IN_V and REG_GND consecutive read confuse sometimes at 20180810 end
 #define QPNP_VADC_HC1_CONV_REQ_START				BIT(7)
 
 #define QPNP_VADC_HC1_VBAT_MIN_THR0				0x48
@@ -236,7 +242,10 @@ static struct qpnp_vadc_scale_fn vadc_scale_fn[] = {
 	[SCALE_SMB1390_DIE_TEMP] = {qpnp_adc_scale_die_temp_1390},
 	[SCALE_BATT_THERM_TEMP_PU30] = {qpnp_adc_batt_therm_pu30},
 	[SCALE_BATT_THERM_TEMP_PU400] = {qpnp_adc_batt_therm_pu400},
-	[SCALE_BATT_THERM_TEMP_QRD_215] = {qpnp_adc_batt_therm_qrd_215}
+	[SCALE_BATT_THERM_TEMP_QRD_215] = {qpnp_adc_batt_therm_qrd_215},
+//huaqin add by tangqingyong for ZQL1830-412 NTC batt-therm config start
+	[SCALE_BATT_THERM_B3435_PU30] = {qpnp_adc_batt_therm_B3435_pu30},
+//huaqin add by tangqingyong for ZQL1830-412 NTC batt-therm config end
 };
 
 static struct qpnp_vadc_rscale_fn adc_vadc_rscale_fn[] = {
