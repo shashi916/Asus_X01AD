@@ -99,8 +99,9 @@ static struct mdss_panel_intf pan_types[] = {
 	{"edp", MDSS_PANEL_INTF_EDP},
 	{"hdmi", MDSS_PANEL_INTF_HDMI},
 };
-static char mdss_mdp_panel[MDSS_MAX_PANEL_LEN];
-
+/* Huaqin modify for lcm compatibility by zhanghao at 2018/07/30 start*/
+char mdss_mdp_panel[MDSS_MAX_PANEL_LEN];
+/* Huaqin modify for lcm compatibility by zhanghao at 2018/07/30 end*/
 struct mdss_hw mdss_mdp_hw = {
 	.hw_ndx = MDSS_HW_MDP,
 	.ptr = NULL,

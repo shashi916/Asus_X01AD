@@ -22,7 +22,10 @@
 #include <linux/qpnp/pwm.h>
 #include <linux/err.h>
 #include <linux/string.h>
-
+/* Huaqin modify for lcm compatibility by zhanghao at 2018/07/30 start*/
+#include "mdss_panel.h"
+extern char mdss_mdp_panel[MDSS_MAX_PANEL_LEN];
+/* Huaqin modify for lcm compatibility by zhanghao at 2018/07/30 end*/
 #include "mdss_dsi.h"
 #include "mdss_debug.h"
 #ifdef TARGET_HW_MDSS_HDMI
@@ -36,7 +39,9 @@
 #define VSYNC_DELAY msecs_to_jiffies(17)
 
 DEFINE_LED_TRIGGER(bl_led_trigger);
-
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+extern bool shutdown_flag;
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
 {
 	if (ctrl->pwm_pmi)
@@ -212,13 +217,13 @@ static void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 
 	mdss_dsi_cmdlist_put(ctrl, &cmdreq);
 }
-
-static char led_pwm1[2] = {0x51, 0x0};	/* DTYPE_DCS_WRITE1 */
+/* Huaqin modify for backlight Flicker by qimaokang at 2018/07/31 start*/
+static char led_pwm1[3] = {0x51, 0x0 ,0x0};	/* DTYPE_DCS_WRITE1 */
 static struct dsi_cmd_desc backlight_cmd = {
-	{DTYPE_DCS_WRITE1, 1, 0, 0, 1, sizeof(led_pwm1)},
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 1, sizeof(led_pwm1)},
 	led_pwm1
 };
-
+/* Huaqin modify for backlight Flicker by qimaokang at 2018/07/31 end*/
 static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 {
 	struct dcs_cmd_req cmdreq;
@@ -229,11 +234,12 @@ static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 		if (ctrl->ndx != DSI_CTRL_LEFT)
 			return;
 	}
-
-	pr_debug("%s: level=%d\n", __func__, level);
-
-	led_pwm1[1] = (unsigned char)level;
-
+/* Huaqin modify for backlight Flicker by qimaokang at 2018/07/31 start*/
+	pr_err("%s: level=%d\n", __func__, level);
+	led_pwm1[1] = (unsigned char)(level>>8);
+	led_pwm1[2] = (unsigned char)level;
+	pr_err("qimk h:%d l:%d\n",led_pwm1[1],led_pwm1[2]);
+/* Huaqin modify for backlight Flicker by qimaokang at 2018/07/31 end*/
 	memset(&cmdreq, 0, sizeof(cmdreq));
 	cmdreq.cmds = &backlight_cmd;
 	cmdreq.cmds_cnt = 1;
@@ -302,7 +308,14 @@ static bool mdss_dsi_panel_get_idle_mode(struct mdss_panel_data *pdata)
 static int mdss_dsi_request_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 {
 	int rc = 0;
-
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+	rc = gpio_request(ctrl_pdata->tp_rst_gpio, "disp_rst_n");
+	if (rc) {
+		pr_err("request tp reset gpio failed, rc=%d\n",
+			rc);
+		goto tp_rst_gpio_err;
+	}
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 	if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
 		rc = gpio_request(ctrl_pdata->disp_en_gpio,
 						"disp_enable");
@@ -358,6 +371,10 @@ rst_gpio_err:
 	if (gpio_is_valid(ctrl_pdata->disp_en_gpio))
 		gpio_free(ctrl_pdata->disp_en_gpio);
 disp_en_gpio_err:
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+gpio_free(ctrl_pdata->tp_rst_gpio);
+tp_rst_gpio_err:
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 	return rc;
 }
 
@@ -424,13 +441,15 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			   __func__, __LINE__);
 		return rc;
 	}
-
-	if (pinfo->skip_panel_reset && !pinfo->cont_splash_enabled) {
-		pr_debug("%s: skip_panel_reset is set\n", __func__);
-		return 0;
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+	if (!gpio_is_valid(ctrl_pdata->tp_rst_gpio)) {
+		pr_debug("%s:%d, reset line not configured\n",
+			   __func__, __LINE__);
+		return rc;
 	}
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
+	pr_err("HQ %s: enable = %d\n", __func__, enable);
 
-	pr_debug("%s: enable = %d\n", __func__, enable);
 
 	if (enable) {
 		rc = mdss_dsi_request_gpios(ctrl_pdata);
@@ -459,11 +478,23 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 						__func__);
 					goto exit;
 				}
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+				rc = gpio_direction_output(ctrl_pdata->tp_rst_gpio,
+					pdata->panel_info.rst_seq[0]);
+				if (rc) {
+					pr_err("%s: unable to set dir for tp rst gpio\n",
+						__func__);
+					goto exit;
+				}
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 			}
-
 			for (i = 0; i < pdata->panel_info.rst_seq_len; ++i) {
 				gpio_set_value((ctrl_pdata->rst_gpio),
 					pdata->panel_info.rst_seq[i]);
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+				gpio_set_value((ctrl_pdata->tp_rst_gpio),
+					pdata->panel_info.rst_seq[i]);
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 				if (pdata->panel_info.rst_seq[++i])
 					usleep_range((pinfo->rst_seq[i] * 1000),
 					(pinfo->rst_seq[i] * 1000) + 10);
@@ -522,8 +553,18 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			usleep_range(100, 110);
 			gpio_free(ctrl_pdata->disp_en_gpio);
 		}
-		gpio_set_value((ctrl_pdata->rst_gpio), 0);
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+/* huaqin add for gesture by liufurong at 20180801 start */
+		if(shutdown_flag) {
+			gpio_set_value((ctrl_pdata->rst_gpio), 0);
+			gpio_set_value((ctrl_pdata->tp_rst_gpio), 0);
+		}
+/* huaqin add for gesture by liufurong at 20180801 end */
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 		gpio_free(ctrl_pdata->rst_gpio);
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+		gpio_free(ctrl_pdata->tp_rst_gpio);
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 		if (gpio_is_valid(ctrl_pdata->mode_gpio))
 			gpio_free(ctrl_pdata->mode_gpio);
 	}
@@ -2010,7 +2051,12 @@ static void mdss_dsi_parse_esd_params(struct device_node *np,
 
 	pinfo->esd_check_enabled = of_property_read_bool(np,
 		"qcom,esd-check-enabled");
-
+	/* Huaqin modify for lcm compatibility by zhanghao at 2018/07/30 start*/
+	if(strstr(mdss_mdp_panel, "esd_disabled")) {
+		pr_err("zhanghao no panel no esd\n");
+		pinfo->esd_check_enabled = 0;
+	}
+	/* Huaqin modify for lcm compatibility by zhanghao at 2018/07/30 end*/
 	if (!pinfo->esd_check_enabled)
 		return;
 

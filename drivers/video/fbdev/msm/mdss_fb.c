@@ -55,6 +55,7 @@
 #include "mdp3_ctrl.h"
 #include "mdss_sync.h"
 
+#include <linux/wakelock.h>
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MDSS_FB_NUM 3
 #else
@@ -80,7 +81,14 @@
  * Default value is set to 1 sec.
  */
 #define MDP_TIME_PERIOD_CALC_FPS_US	1000000
-
+/*Huaqin modify by zhanghao for No repetition lcd suspend start*/
+extern bool lcd_suspend_flag;
+/*Huaqin modify by zhanghao for No repetition lcd suspend end*/
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 start */
+static void asus_lcd_early_unblank_func(struct work_struct *);
+static struct workqueue_struct *asus_lcd_early_unblank_wq;
+extern int g_resume_from_fp;
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 end */
 static struct fb_info *fbi_list[MAX_FBI_LIST];
 static int fbi_list_index;
 
@@ -92,7 +100,9 @@ static u32 mdss_fb_pseudo_palette[16] = {
 };
 
 static struct msm_mdp_interface *mdp_instance;
-
+/*Huaqin modify by zhanghao for No repetition lcd suspend start*/
+static struct wake_lock early_unblank_wakelock;
+/*Huaqin modify by zhanghao for No repetition lcd suspend end*/
 static int mdss_fb_register(struct msm_fb_data_type *mfd);
 static int mdss_fb_open(struct fb_info *info, int user);
 static int mdss_fb_release(struct fb_info *info, int user);
@@ -102,6 +112,7 @@ static int mdss_fb_pan_display(struct fb_var_screeninfo *var,
 static int mdss_fb_check_var(struct fb_var_screeninfo *var,
 			     struct fb_info *info);
 static int mdss_fb_set_par(struct fb_info *info);
+static int mdss_fb_blank(int blank_mode, struct fb_info *info);
 static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 			     int op_enable);
 static int mdss_fb_suspend_sub(struct msm_fb_data_type *mfd);
@@ -968,13 +979,17 @@ static void mdss_fb_remove_sysfs(struct msm_fb_data_type *mfd)
 {
 	sysfs_remove_group(&mfd->fbi->dev->kobj, &mdss_fb_attr_group);
 }
-
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+bool shutdown_flag = 0;
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 static void mdss_fb_shutdown(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd = platform_get_drvdata(pdev);
 
 	mfd->shutdown_pending = true;
-
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+	shutdown_flag = 1;
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 	/* wake up threads waiting on idle or kickoff queues */
 	wake_up_all(&mfd->idle_wait_q);
 	wake_up_all(&mfd->kickoff_wait_q);
@@ -1405,7 +1420,8 @@ static int mdss_fb_probe(struct platform_device *pdev)
 			pr_err("failed to register input handler\n");
 
 	INIT_DELAYED_WORK(&mfd->idle_notify_work, __mdss_fb_idle_notify_work);
-
+	INIT_DELAYED_WORK(&mfd->early_unblank_work, asus_lcd_early_unblank_func);
+	mfd->early_unblank_work_queued = false;
 	return rc;
 }
 
@@ -1618,13 +1634,60 @@ static int mdss_fb_resume(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_PM_SLEEP
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 start */
+static void asus_lcd_early_unblank_func(struct work_struct *work)
+{
+	struct delayed_work *dw = to_delayed_work(work);
+	struct msm_fb_data_type *mfd = container_of(dw, struct msm_fb_data_type,
+			early_unblank_work);
+	struct fb_info *fbi;
+
+	if (!mfd) {
+		pr_err("[Display] cannot get mfd from work\n");
+		return;
+	}
+
+	fbi = mfd->fbi;
+	if (!fbi)
+		return;
+
+	printk("[Display] Early unblank func +++ \n");
+/*Huaqin modify by zhanghao for No repetition lcd suspend start*/
+	wake_lock_timeout(&early_unblank_wakelock,msecs_to_jiffies(300));
+/*Huaqin modify by zhanghao for No repetition lcd suspend end*/
+	/*Huaqin modify by zhanghao for wakelock power consumption start*/
+	fb_blank(fbi, FB_BLANK_UNBLANK);
+	/*Huaqin modify by zhanghao for wakelock power consumption end*/
+	printk("[Display] Early unblank func --- \n");
+/*Huaqin modify by zhanghao for No repetition lcd suspend start*/
+	lcd_suspend_flag = false;
+/*Huaqin modify by zhanghao for No repetition lcd suspend end*/
+
+	mfd->early_unblank_work_queued = false;
+}
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 end */
+extern int focal_flag;
 static int mdss_fb_pm_suspend(struct device *dev)
 {
 	struct msm_fb_data_type *mfd = dev_get_drvdata(dev);
-
+    struct fb_info *fbi;
 	if (!mfd)
 		return -ENODEV;
-
+    fbi = mfd->fbi;
+	if (!fbi)
+		return -ENODEV;
+/*Huaqin modify by zhanghao for No repetition lcd suspend start*/
+	if(focal_flag == 0 && mfd->index == 0) {
+		printk("[Display] mdss_fb_pm_suspend->focal_flag value is %d.\n",focal_flag);
+		if(lcd_suspend_flag == false) {
+			printk("[Display] display suspend, blank display.\n");
+	/*Huaqin modify by zhanghao for wakelock power consumption start*/
+			fb_blank(fbi, FB_BLANK_POWERDOWN);
+			lcd_suspend_flag = true;
+		}
+	}
+	/*Huaqin modify by zhanghao for wakelock power consumption end*/
+/*Huaqin modify by zhanghao for No repetition lcd suspend end*/
 	dev_dbg(dev, "display pm suspend\n");
 
 	return mdss_fb_suspend_sub(mfd);
@@ -1633,7 +1696,7 @@ static int mdss_fb_pm_suspend(struct device *dev)
 static int mdss_fb_pm_resume(struct device *dev)
 {
 	struct msm_fb_data_type *mfd = dev_get_drvdata(dev);
-
+	int rc = 0;
 	if (!mfd)
 		return -ENODEV;
 
@@ -1648,7 +1711,24 @@ static int mdss_fb_pm_resume(struct device *dev)
 	pm_runtime_set_suspended(dev);
 	pm_runtime_enable(dev);
 
-	return mdss_fb_resume_sub(mfd);
+    rc = mdss_fb_resume_sub(mfd);
+	printk("[Display] mdss_fb_pm_resume->focal_flag value is %d.\n",focal_flag);
+	if(focal_flag == 0) {
+		if (g_resume_from_fp && mfd->index == 0) {
+			if (!mfd->early_unblank_work_queued) {
+				printk("[Display] doing unblank from resume, due to fp.\n");
+				mfd->early_unblank_work_queued = true;
+				/*Huaqin modify by zhanghao for wakelock power consumption start*/
+				/*Huaqin modify by liufurong for wakelock power consumption start*/
+				queue_delayed_work(asus_lcd_early_unblank_wq, &mfd->early_unblank_work, 0);
+				/*Huaqin modify by liufurong for wakelock power consumption end*/
+				/*Huaqin modify by zhanghao for wakelock power consumption end*/
+			} else {
+				printk("[Display] mfd->early_unblank_work_queued returns true.\n");
+			}
+		}
+	}
+	return rc;
 }
 #endif
 
@@ -1891,11 +1971,11 @@ static int mdss_fb_blank_blank(struct msm_fb_data_type *mfd,
 
 	cur_power_state = mfd->panel_power_state;
 
-	pr_debug("Transitioning from %d --> %d\n", cur_power_state,
+	printk("[Display] Transitioning from %d --> %d\n", cur_power_state,
 		req_power_state);
 
 	if (cur_power_state == req_power_state) {
-		pr_debug("No change in power state\n");
+		printk("[Display] No change in power state, return 0\n");
 		return 0;
 	}
 
@@ -2083,7 +2163,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
-		pr_debug("unblank called. cur pwr state=%d\n", cur_power_state);
+		printk("[Display] unblank called. cur pwr state=%d\n", cur_power_state);
 		ret = mdss_fb_blank_unblank(mfd);
 		break;
 	case BLANK_FLAG_ULP:
@@ -2098,7 +2178,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 		break;
 	case BLANK_FLAG_LP:
 		req_power_state = MDSS_PANEL_POWER_LP1;
-		pr_debug(" power mode requested\n");
+		printk("[Display] low power mode requested\n");
 
 		/*
 		 * If low power mode is requested when panel is already off,
@@ -2117,7 +2197,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	case FB_BLANK_POWERDOWN:
 	default:
 		req_power_state = MDSS_PANEL_POWER_OFF;
-		pr_debug("blank powerdown called\n");
+		printk("[Display] blank powerdown called\n");
 		ret = mdss_fb_blank_blank(mfd, req_power_state);
 		break;
 	}
@@ -5149,10 +5229,13 @@ int __init mdss_fb_init(void)
 
 	if (platform_driver_register(&mdss_fb_driver))
 		return rc;
-
+	asus_lcd_early_unblank_wq = create_singlethread_workqueue("display_early_wq");
+/*Huaqin modify by zhanghao for No repetition lcd suspend start*/
+	wake_lock_init(&early_unblank_wakelock, WAKE_LOCK_SUSPEND, "early_unblank-update");
+/*Huaqin modify by zhanghao for No repetition lcd suspend end*/
 	return 0;
 }
-
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 end */
 module_init(mdss_fb_init);
 
 int mdss_fb_suspres_panel(struct device *dev, void *data)

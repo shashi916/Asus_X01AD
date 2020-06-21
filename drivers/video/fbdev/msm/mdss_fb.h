@@ -287,7 +287,10 @@ struct msm_fb_data_type {
 	u32 idle_state;
 	struct msm_fb_fps_info fps_info;
 	struct delayed_work idle_notify_work;
-
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 start */
+	struct delayed_work early_unblank_work;
+	bool early_unblank_work_queued;
+/* Huaqin modify for ZB632KL by qiaoxiaokun at 2018/10/30 end */
 	bool atomic_commit_pending;
 
 	int op_enable;

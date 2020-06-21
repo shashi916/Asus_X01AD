@@ -47,6 +47,10 @@ static struct mdss_dsi_data *mdss_dsi_res;
 
 static struct pm_qos_request mdss_dsi_pm_qos_request;
 
+/* Huaqin add for nvt fw update fail by liufurong at 20181109 start */
+int tp_fw_update_flag = 0;
+/* Huaqin add for nvt fw update fail by liufurong at 20181109 end */
+
 void mdss_dump_dsi_debug_bus(u32 bus_dump_flag,
 	u32 **dump_mem)
 {
@@ -373,7 +377,10 @@ static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 		ret = -EINVAL;
 		goto end;
 	}
-
+	/* Huaqin add for nvt fw update fail by liufurong at 20181109 start */
+	if(tp_fw_update_flag)
+		return 0;
+	/* Huaqin add for nvt fw update fail by liufurong at 20181109 end */
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
@@ -393,13 +400,15 @@ static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 
 	if (mdss_dsi_pinctrl_set_state(ctrl_pdata, false))
 		pr_debug("reset disable: pinctrl not enabled\n");
-
-	ret = msm_mdss_enable_vreg(
-		ctrl_pdata->panel_power_data.vreg_config,
-		ctrl_pdata->panel_power_data.num_vreg, 0);
-	if (ret)
-		pr_err("%s: failed to disable vregs for %s\n",
-			__func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+	mdelay(5);
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
+		ret = msm_mdss_enable_vreg(
+			ctrl_pdata->panel_power_data.vreg_config,
+			ctrl_pdata->panel_power_data.num_vreg, 0);
+		if (ret)
+			pr_err("%s: failed to disable vregs for %s\n",
+				__func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
 
 end:
 	return ret;
@@ -414,7 +423,10 @@ static int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 		pr_err("%s: Invalid input data\n", __func__);
 		return -EINVAL;
 	}
-
+	/* Huaqin add for nvt fw update fail by liufurong at 20181109 start */
+	if(tp_fw_update_flag)
+		return 0;
+	/* Huaqin add for nvt fw update fail by liufurong at 20181109 end */
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
@@ -4222,7 +4234,13 @@ static int mdss_dsi_parse_gpio_params(struct platform_device *ctrl_pdev,
 	if (!gpio_is_valid(ctrl_pdata->rst_gpio))
 		pr_err("%s:%d, reset gpio not specified\n",
 						__func__, __LINE__);
-
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 start*/
+	ctrl_pdata->tp_rst_gpio = of_get_named_gpio(ctrl_pdev->dev.of_node,
+			 "qcom,platform-tp-reset-gpio", 0);
+	if (!gpio_is_valid(ctrl_pdata->tp_rst_gpio))
+		pr_err("%s:%d, tp reset gpio not specified\n",
+						__func__, __LINE__);
+/* Huaqin modify for time sequence by qimaokang at 2018/08/14 end*/
 	if (pinfo->mode_gpio_state != MODE_GPIO_NOT_VALID) {
 
 		ctrl_pdata->mode_gpio = of_get_named_gpio(
