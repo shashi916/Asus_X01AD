@@ -1,0 +1,27 @@
+menuconfig INPUT_FINGERPRINT
+	bool "Fingerprint"
+	help
+	  Say Y here, and a list of supported fingerprint will be displayed.
+	  This option doesn't affect the kernel.
+
+	  If unsure, say Y.
+
+if INPUT_TOUCHSCREEN
+
+config CDFINGER_FP
+	bool "CDFINGER_FP for Qualcomm package"
+	help
+	  Say Y here if you have a cdfinger fingerprint.
+
+	  If unsure, say N.
+
+# Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/26 start
+config FOCAL_FP
+	bool "FOCAL_FP for Qualcomm package"
+	help
+	  Say Y here if you have a focal fingerprint.
+
+	  If unsure, say N.
+# Huaqin modify for ZQL1830-395 by zhaojunhai1 at 2018/7/26 end
+
+endif
