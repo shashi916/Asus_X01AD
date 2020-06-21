@@ -749,8 +749,9 @@ vreg_get_fail:
 int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 	int gpio_en)
 {
-	int rc = 0, i = 0, err = 0;
-
+/*Huaqin add for ZQL1830-1164 by likai at 2018/09/25 start*/
+	int rc = 0, i = 0, err = 1,retry_count = 0;
+/*Huaqin add for ZQL1830-1164 by likai at 2018/09/25 end*/
 	if (!gpio_tbl || !size) {
 		pr_err("%s:%d invalid gpio_tbl %pK / size %d\n", __func__,
 			__LINE__, gpio_tbl, size);
@@ -760,21 +761,29 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 		CDBG("%s:%d i %d, gpio %d dir %ld\n", __func__, __LINE__, i,
 			gpio_tbl[i].gpio, gpio_tbl[i].flags);
 	}
+/*Huaqin add for ZQL1830-1164 by likai at 2018/09/25 start*/
 	if (gpio_en) {
-		for (i = 0; i < size; i++) {
-			err = gpio_request_one(gpio_tbl[i].gpio,
-				gpio_tbl[i].flags, gpio_tbl[i].label);
-			if (err) {
-				/*
-				 * After GPIO request fails, contine to
-				 * apply new gpios, outout a error message
-				 * for driver bringup debug
-				 */
-				pr_err("%s:%d gpio %d:%s request fails\n",
-					__func__, __LINE__,
-					gpio_tbl[i].gpio, gpio_tbl[i].label);
-			}
-		}
+	//pr_err("ZHJ2 size:%d", size);
+	while (err && retry_count < 3) {
+	for (i = 0; i < size; i++) {
+	err = gpio_request_one(gpio_tbl[i].gpio,
+	gpio_tbl[i].flags, gpio_tbl[i].label);
+	if (err) {
+	/*
+	* After GPIO request fails, contine to
+	* apply new gpios, outout a error message
+	* for driver bringup debug
+	*/
+	pr_err("%s:%d gpio %d:%s request fails, retry_count %d\n",
+	__func__, __LINE__,
+	gpio_tbl[i].gpio, gpio_tbl[i].label, retry_count);
+	usleep_range(200,200);
+	retry_count++;
+	break;
+		 }
+	     }
+         }
+/*Huaqin add for ZQL1830-1164 by likai at 2018/09/25 end*/
 	} else {
 		gpio_free_array(gpio_tbl, size);
 	}

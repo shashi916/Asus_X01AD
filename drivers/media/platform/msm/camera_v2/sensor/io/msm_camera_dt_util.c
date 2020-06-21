@@ -65,6 +65,22 @@ int msm_camera_fill_vreg_params(struct camera_vreg_t *cam_vreg,
 						cam_vreg[j].max_voltage =
 						power_setting[i].config_val;
 					}
+					/*Huaqin add for ZQL1830-1047 by likai at 2018/10/10 start*/
+					if(power_setting[i].config_val==1100000)
+						{
+						cam_vreg[j].min_voltage =
+						cam_vreg[j].max_voltage =
+						power_setting[i].config_val;
+						}
+					/*Huaqin add for ZQL1830-1047 by likai at 2018/10/10 end*/
+                                        /*Huaqin add for HQ000003 by likai at 2018/12/4 start*/
+                                        if(power_setting[i].config_val==1250000)
+                                                {
+                                                cam_vreg[j].min_voltage =
+                                                cam_vreg[j].max_voltage =
+                                                power_setting[i].config_val;
+                                                }
+                                        /*Huaqin add for HQ000003 by likai at 2018/12/14 end*/
 					break;
 				}
 			}

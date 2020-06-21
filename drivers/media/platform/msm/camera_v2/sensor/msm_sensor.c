@@ -249,6 +249,7 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
 	uint16_t chipid = 0;
+	uint16_t sp2509_id = 0;
 	struct msm_camera_i2c_client *sensor_i2c_client;
 	struct msm_camera_slave_info *slave_info;
 	const char *sensor_name;
@@ -304,6 +305,27 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	if (msm_sensor_id_by_mask(s_ctrl, chipid) != slave_info->sensor_id) {
 		pr_err("%s chip id %x does not match %x\n",
 				__func__, chipid, slave_info->sensor_id);
+		return -ENODEV;
+	}
+	if((strcmp(sensor_name, "sp2509_hlt_sub")==0)||(strcmp(sensor_name, "sp2509_kingcome_sub")==0)) {
+		sensor_i2c_client->addr_type=MSM_CAMERA_I2C_WORD_ADDR;
+		sensor_i2c_client->cci_client->sid = 0xa0 >> 1;
+			sensor_i2c_client->i2c_func_tbl->i2c_read(
+		sensor_i2c_client, 0x0004,
+		&sp2509_id, MSM_CAMERA_I2C_BYTE_DATA);
+		pr_err("sp2509_id =%d\n",sp2509_id);
+		sensor_i2c_client->cci_client->sid = 0x7a >> 1;
+		sensor_i2c_client->addr_type= MSM_CAMERA_I2C_BYTE_ADDR;
+		if((sp2509_id==0x05)&&(strcmp(sensor_name, "sp2509_hlt_sub")==0)){//id =0x05 sensor_name =sp2509_hlt_sub
+			return rc;
+		}
+		if((sp2509_id==0x22)&&(strcmp(sensor_name, "sp2509_kingcome_sub")==0)){//id =0x22 sensor_name =sp2509_kingcome_sub
+			return rc;
+		}
+		if((sp2509_id !=0x22)&&(sp2509_id !=0x05)&&(strcmp(sensor_name, "sp2509_hlt_sub")==0)){//id error , sensor_name =sp2509_hlt_sub
+			pr_err("sp2509_id error");
+			return rc;
+		}
 		return -ENODEV;
 	}
 	return rc;
