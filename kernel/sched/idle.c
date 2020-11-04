@@ -166,7 +166,7 @@ static void cpuidle_idle_call(void)
 	 * until a proper wakeup interrupt happens.
 	 */
 	if (idle_should_freeze()) {
-		entered_state = cpuidle_enter_s2idle(drv, dev);
+		entered_state = cpuidle_enter_freeze(drv, dev);
 		if (entered_state > 0) {
 			local_irq_enable();
 			goto exit_idle;
