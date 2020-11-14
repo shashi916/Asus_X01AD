@@ -2405,13 +2405,14 @@ static struct snd_soc_dai_link msm_int_dai[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
+//zhengwu start
 	{/* hw:x,37 */
-		.name = "Tertiary MI2S_RX Hostless",
-		.stream_name = "Tertiary MI2S_RX Hostless",
-		.cpu_dai_name = "TERT_MI2S_RX_HOSTLESS",
+		.name = "Quinary MI2S_TX Hostless",
+		.stream_name = "Quinary MI2S_TX Hostless",
+		.cpu_dai_name = "QUIN_MI2S_TX_HOSTLESS",
 		.platform_name	= "msm-pcm-hostless",
 		.dynamic = 1,
-		.dpcm_playback = 1,
+		.dpcm_capture = 1,
 		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
 			SND_SOC_DPCM_TRIGGER_POST},
 		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
@@ -2422,6 +2423,7 @@ static struct snd_soc_dai_link msm_int_dai[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
+//zhengwu end
 	{/* hw:x,38 */
 		.name = "INT0 MI2S_RX Hostless",
 		.stream_name = "INT0 MI2S_RX Hostless",
@@ -2458,6 +2460,16 @@ static struct snd_soc_dai_link msm_int_dai[] = {
 	},
 };
 
+/* Huaqin add for config i2s tert dai for nxp pa by zhengwu at 2018/08/03 start */
+static struct snd_soc_dai_link_component tfa98xx_codecs[] ={
+	{
+		.name     = "tfa98xx.5-0034",
+		.of_node  = NULL,
+		.dai_name = "tfa98xx-aif-5-34",
+	},
+
+};
+/* Huaqin add for config i2s tert dai for nxp pa by zhengwu at 2018/08/03 end */
 
 static struct snd_soc_dai_link msm_int_wsa_dai[] = {
 	{/* hw:x,40 */
@@ -2971,6 +2983,7 @@ static struct snd_soc_dai_link msm_mi2s_be_dai_links[] = {
 		.ops = &msm_mi2s_be_ops,
 		.ignore_suspend = 1,
 	},
+	#if 0
 	{
 		.name = LPASS_BE_SEC_MI2S_RX,
 		.stream_name = "Secondary MI2S Playback",
@@ -3000,6 +3013,37 @@ static struct snd_soc_dai_link msm_mi2s_be_dai_links[] = {
 		.ops = &msm_mi2s_be_ops,
 		.ignore_suspend = 1,
 	},
+	#else
+	{
+		.name = LPASS_BE_QUIN_MI2S_RX,
+		.stream_name = "Quinary MI2S Playback",
+		.cpu_dai_name = "msm-dai-q6-mi2s.1",
+		.platform_name = "msm-pcm-routing",
+		.codecs = tfa98xx_codecs,
+		.num_codecs = 1,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.id = MSM_BACKEND_DAI_QUINARY_MI2S_RX,
+		.be_hw_params_fixup = msm_common_be_hw_params_fixup,
+		.ops = &msm_mi2s_be_ops,
+		.ignore_suspend = 1,
+		.ignore_pmdown_time = 1,
+	},
+	{
+		.name = LPASS_BE_QUIN_MI2S_TX,
+		.stream_name = "Quinary MI2S Capture",
+		.cpu_dai_name = "msm-dai-q6-mi2s.1",
+		.platform_name = "msm-pcm-routing",
+		.codecs = tfa98xx_codecs,
+		.num_codecs = 1,
+		.no_pcm = 1,
+		.dpcm_capture = 1,
+		.id = MSM_BACKEND_DAI_QUINARY_MI2S_TX,
+		.be_hw_params_fixup = msm_common_be_hw_params_fixup,
+		.ops = &msm_mi2s_be_ops,
+		.ignore_suspend = 1,
+	},
+	#endif
 	{
 		.name = LPASS_BE_TERT_MI2S_RX,
 		.stream_name = "Tertiary MI2S Playback",

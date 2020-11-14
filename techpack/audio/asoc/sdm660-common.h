@@ -112,6 +112,9 @@ struct msm_asoc_mach_data {
 	struct device_node *comp_gpio_p; /* used by pinctrl API */
 	struct device_node *dmic_gpio_p; /* used by pinctrl API */
 	struct device_node *ext_spk_gpio_p; /* used by pinctrl API */
+/* Huaqin add for config i2s tert dai for nxp pa by zhengwu at 2018/08/03 start */
+	struct device_node *pri_mi2s_gpio_p;
+/* Huaqin add for config i2s tert dai for nxp pa by zhengwu at 2018/08/03 end */
 	struct device_node *mi2s_gpio_p[MI2S_MAX]; /* used by pinctrl API */
 	struct snd_soc_codec *codec;
 	struct sdm660_codec sdm660_codec_fn;

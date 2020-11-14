@@ -58,6 +58,11 @@ static int msm_pri_mi2s_rx_ch = 1;
 static int msm_proxy_rx_ch = 2;
 static int msm_vi_feed_tx_ch = 2;
 static int mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+static int quin_mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+static int quin_mi2s_tx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+static int quin_mi2s_rx_bits_per_sample = 16;
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
 static int mi2s_rx_bits_per_sample = 16;
 static int mi2s_rx_sample_rate = SAMPLING_RATE_48KHZ;
 
@@ -86,10 +91,12 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.mono_stero_detection = false,
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = false,
+/* Huaqin add for headset by zhengwu at 2018/08/06 start */
 	.key_code[0] = KEY_MEDIA,
-	.key_code[1] = KEY_VOICECOMMAND,
-	.key_code[2] = KEY_VOLUMEUP,
-	.key_code[3] = KEY_VOLUMEDOWN,
+	.key_code[1] = KEY_VOLUMEUP,
+	.key_code[2] = KEY_VOLUMEDOWN,
+	.key_code[3] = 0,
+/* Huaqin add for headset by zhengwu at 2018/08/06 end */
 	.key_code[4] = 0,
 	.key_code[5] = 0,
 	.key_code[6] = 0,
@@ -129,6 +136,9 @@ static struct afe_clk_set wsa_ana_clk = {
 };
 
 static char const *rx_bit_format_text[] = {"S16_LE", "S24_LE", "S24_3LE"};
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+static char const *quin_mi2s_bit_format_text[] = {"S16_LE", "S24_LE", "S24_3LE"};
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
 static const char *const mi2s_ch_text[] = {"One", "Two"};
 static const char *const loopback_mclk_text[] = {"DISABLE", "ENABLE"};
 static const char *const btsco_rate_text[] = {"BTSCO_RATE_8KHZ",
@@ -478,6 +488,22 @@ static int msm_mi2s_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 	return 0;
 }
 
+static int msm_quin_mi2s_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+				struct snd_pcm_hw_params *params)
+{
+	struct snd_interval *rate = hw_param_interval(params,
+					SNDRV_PCM_HW_PARAM_RATE);
+
+	struct snd_interval *channels = hw_param_interval(params,
+					SNDRV_PCM_HW_PARAM_CHANNELS);
+
+	pr_debug("%s: Num of channels = %d Sample rate = %d\n", __func__,
+			msm_pri_mi2s_rx_ch, mi2s_rx_sample_rate);
+	rate->min = rate->max = SAMPLING_RATE_48KHZ;
+	channels->min = channels->max = 2;
+	return 0;
+}
+
 static int msm_tx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 				struct snd_pcm_hw_params *params)
 {
@@ -581,6 +607,25 @@ static int msm_mi2s_snd_hw_params(struct snd_pcm_substream *substream,
 			       SNDRV_PCM_FORMAT_S16_LE);
 	return 0;
 }
+
+static int msm_quin_mi2s_snd_hw_params(struct snd_pcm_substream *substream,
+			     struct snd_pcm_hw_params *params)
+{
+	pr_debug("%s(): substream = %s  stream = %d\n", __func__,
+		 substream->name, substream->stream);
+       /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT,
+			       quin_mi2s_rx_bit_format);
+	else
+		param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT,
+			       quin_mi2s_tx_bit_format);
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
+        /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
+	return 0;
+}
+
 static int msm8952_get_clk_id(int port_id)
 {
 	switch (port_id) {
@@ -654,9 +699,13 @@ static uint32_t get_mi2s_rx_clk_val(int port_id)
 	 *  Derive clock value based on sample rate, bits per sample and
 	 *  channel count is used as 2
 	 */
-	if (is_mi2s_rx_port(port_id))
+        /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+	if (is_mi2s_rx_port(port_id)) {
 		clk_val = (mi2s_rx_sample_rate * mi2s_rx_bits_per_sample * 2);
-
+		if(port_id == AFE_PORT_ID_QUINARY_MI2S_RX)
+			clk_val = (mi2s_rx_sample_rate * quin_mi2s_rx_bits_per_sample * 2);
+        }
+        /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
 	pr_debug("%s: MI2S Rx bit clock value: 0x%0x\n", __func__, clk_val);
 	return clk_val;
 }
@@ -685,14 +734,26 @@ static int msm_mi2s_sclk_ctl(struct snd_pcm_substream *substream, bool enable)
 			mi2s_tx_clk.enable = enable;
 			mi2s_tx_clk.clk_id =
 					msm8952_get_clk_id(port_id);
-			mi2s_tx_clk.clk_freq_in_hz =
-					Q6AFE_LPASS_IBIT_CLK_1_P536_MHZ;
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+			if((quin_mi2s_tx_bit_format == SNDRV_PCM_FORMAT_S24_LE) && (port_id == AFE_PORT_ID_QUINARY_MI2S_TX)) {
+				mi2s_tx_clk.clk_freq_in_hz =
+						Q6AFE_LPASS_IBIT_CLK_3_P072_MHZ;
+			}
+/* Huaqin add for audio ZQL1830-1803 by zhengwu at 2018/12/10 start */
+			else if((quin_mi2s_tx_bit_format == SNDRV_PCM_FORMAT_S24_3LE) && (port_id == AFE_PORT_ID_QUINARY_MI2S_TX)) {
+				mi2s_tx_clk.clk_freq_in_hz =
+						Q6AFE_LPASS_IBIT_CLK_3_P072_MHZ;
+			} else {
+				mi2s_tx_clk.clk_freq_in_hz =
+						Q6AFE_LPASS_IBIT_CLK_1_P536_MHZ;
+			}
+/* Huaqin add for audio ZQL1830-1803 by zhengwu at 2018/12/10 end */
 			ret = afe_set_lpass_clock_v2(port_id,
 						&mi2s_tx_clk);
 		} else {
 			pr_err("%s:Not valid substream.\n", __func__);
 		}
-
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
 		if (ret < 0)
 			pr_err("%s:afe_set_lpass_clock_v2 failed\n", __func__);
 	} else {
@@ -845,6 +906,58 @@ static int mi2s_rx_bit_format_put(struct snd_kcontrol *kcontrol,
 	}
 	return 0;
 }
+
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+static int quin_mi2s_bit_format_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+
+	switch (quin_mi2s_rx_bit_format) {
+	case SNDRV_PCM_FORMAT_S24_3LE:
+		ucontrol->value.integer.value[0] = 2;
+		break;
+
+	case SNDRV_PCM_FORMAT_S24_LE:
+		ucontrol->value.integer.value[0] = 1;
+		break;
+
+	case SNDRV_PCM_FORMAT_S16_LE:
+	default:
+		ucontrol->value.integer.value[0] = 0;
+		break;
+	}
+
+	pr_debug("%s: quin_mi2s_rx_bit_format = %d, ucontrol value = %ld\n",
+			__func__, quin_mi2s_rx_bit_format,
+			ucontrol->value.integer.value[0]);
+
+	return 0;
+}
+
+static int quin_mi2s_bit_format_put(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	switch (ucontrol->value.integer.value[0]) {
+	case 2:
+		quin_mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S24_3LE;
+		quin_mi2s_tx_bit_format = SNDRV_PCM_FORMAT_S24_3LE;
+		quin_mi2s_rx_bits_per_sample = 32;
+		break;
+	case 1:
+		quin_mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S24_LE;
+		quin_mi2s_tx_bit_format = SNDRV_PCM_FORMAT_S24_LE;
+		quin_mi2s_rx_bits_per_sample = 32;
+		break;
+	case 0:
+	default:
+		quin_mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+		quin_mi2s_tx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+		quin_mi2s_rx_bits_per_sample = 16;
+		break;
+	}
+	return 0;
+}
+/* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
 
 static int loopback_mclk_get(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
@@ -1052,6 +1165,10 @@ static const struct soc_enum msm_snd_enum[] = {
 				vi_feed_ch_text),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mi2s_rx_sample_rate_text),
 				mi2s_rx_sample_rate_text),
+  /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(quin_mi2s_bit_format_text),
+				quin_mi2s_bit_format_text),
+  /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
 };
 
 static const struct snd_kcontrol_new msm_snd_controls[] = {
@@ -1071,6 +1188,10 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 			msm_vi_feed_tx_ch_get, msm_vi_feed_tx_ch_put),
 	SOC_ENUM_EXT("MI2S_RX SampleRate", msm_snd_enum[6],
 			mi2s_rx_sample_rate_get, mi2s_rx_sample_rate_put),
+  /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 start */
+	SOC_ENUM_EXT("QUIN_MI2S_RX Format", msm_snd_enum[7],
+			quin_mi2s_bit_format_get, quin_mi2s_bit_format_put),
+   /* Huaqin add for 24bit play&&record 1287958 by zhengwu at 2019/03/07 end */
 };
 
 static int msm8952_enable_wsa_mclk(struct snd_soc_card *card, bool enable)
@@ -1517,7 +1638,9 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 		return NULL;
 
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(msm8952_wcd_cal)->X) = (Y))
-	S(v_hs_max, 1500);
+/* Huaqin add for headset 1234168 by zhengwu at 2018/09/18 start */
+	S(v_hs_max, 1700);
+/* Huaqin add for headset 1234168 by zhengwu at 2018/09/18 end */
 #undef S
 #define S(X, Y) ((WCD_MBHC_CAL_BTN_DET_PTR(msm8952_wcd_cal)->X) = (Y))
 	S(num_btn, WCD_MBHC_DEF_BUTTONS);
@@ -1542,10 +1665,12 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	 */
 	btn_low[0] = 75;
 	btn_high[0] = 75;
-	btn_low[1] = 150;
-	btn_high[1] = 150;
-	btn_low[2] = 225;
-	btn_high[2] = 225;
+/* Huaqin add for headset by zhengwu at 2018/08/06 start */
+	btn_low[1] = 225;
+	btn_high[1] = 225;
+	btn_low[2] = 450;
+	btn_high[2] = 450;
+/* Huaqin add for headset by zhengwu at 2018/08/06 end */
 	btn_low[3] = 450;
 	btn_high[3] = 450;
 	btn_low[4] = 500;
@@ -1621,7 +1746,7 @@ static struct snd_soc_ops msm8952_quat_mi2s_be_ops = {
 
 static struct snd_soc_ops msm8952_quin_mi2s_be_ops = {
 	.startup = msm_quin_mi2s_snd_startup,
-	.hw_params = msm_mi2s_snd_hw_params,
+	.hw_params = msm_quin_mi2s_snd_hw_params/*msm_mi2s_snd_hw_params*/,
 	.shutdown = msm_quin_mi2s_snd_shutdown,
 };
 
@@ -1765,24 +1890,26 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.ignore_pmdown_time = 1,
 		.id = MSM_FRONTEND_DAI_MULTIMEDIA3,
 	},
+/* Huaqin add for fm no sound by zhengwu at 2018/09/10 start */
 	/* Hostless PCM purpose */
 	{/* hw:x,5 */
-		.name = "Primary MI2S_RX Hostless",
-		.stream_name = "Primary MI2S_RX Hostless",
-		.cpu_dai_name = "PRI_MI2S_RX_HOSTLESS",
-		.platform_name	= "msm-pcm-hostless",
+		.name = "INT4 MI2S_RX Hostless",
+		.stream_name = "INT4 MI2S_RX Hostless",
+		.cpu_dai_name = "INT4_MI2S_RX_HOSTLESS",
+		.platform_name = "msm-pcm-hostless",
 		.dynamic = 1,
 		.dpcm_playback = 1,
 		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
-			SND_SOC_DPCM_TRIGGER_POST},
+		SND_SOC_DPCM_TRIGGER_POST},
 		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
 		.ignore_suspend = 1,
-		 /* this dailink has playback support */
+		/* this dailink has playback support */
 		.ignore_pmdown_time = 1,
 		/* This dainlink has MI2S support */
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
+/* Huaqin add for fm no sound by zhengwu at 2018/09/10 end */
 	{/* hw:x,6 */
 		.name = "INT_FM Hostless",
 		.stream_name = "INT_FM Hostless",
@@ -2620,8 +2747,10 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.stream_name = "Quinary MI2S Capture",
 		.cpu_dai_name = "msm-dai-q6-mi2s.4",
 		.platform_name = "msm-pcm-routing",
-		.codec_dai_name = "snd-soc-dummy-dai",
-		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "tfa98xx-aif-5-34",
+		.codec_name = "tfa98xx.5-0034",
+		//.codecs = tfa98xx_codecs,
+		//.num_codecs = 1,
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.id = MSM_BACKEND_DAI_QUINARY_MI2S_TX,
@@ -2629,33 +2758,27 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.ops = &msm8952_quin_mi2s_be_ops,
 		.ignore_suspend = 1,
 	},
-	/* Proxy Tx BACK END DAI Link */
-	{
-		.name = LPASS_BE_PROXY_TX,
-		.stream_name = "Proxy Capture",
-		.cpu_dai_name = "msm-dai-q6-dev.8195",
-		.platform_name = "msm-pcm-routing",
-		.codec_name = "msm-stub-codec.1",
-		.codec_dai_name = "msm-stub-tx",
-		.no_pcm = 1,
+
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/08/21 start */
+
+{ /* hw:x, 59*/
+		.name = "Quinary MI2S_TX Hostless",
+		.stream_name = "Quinary MI2S_TX Hostless",
+		.cpu_dai_name = "QUIN_MI2S_TX_HOSTLESS",
+		.platform_name = "msm-pcm-hostless",
+		.dynamic = 1,
 		.dpcm_capture = 1,
-		.id = MSM_BACKEND_DAI_PROXY_TX,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+		SND_SOC_DPCM_TRIGGER_POST},
+		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
 		.ignore_suspend = 1,
-	},
-	/* Proxy Rx BACK END DAI Link */
-	{
-		.name = LPASS_BE_PROXY_RX,
-		.stream_name = "Proxy Playback",
-		.cpu_dai_name = "msm-dai-q6-dev.8194",
-		.platform_name = "msm-pcm-routing",
-		.codec_name = "msm-stub-codec.1",
-		.codec_dai_name = "msm-stub-rx",
-		.no_pcm = 1,
-		.dpcm_playback = 1,
-		.id = MSM_BACKEND_DAI_PROXY_RX,
+		/* this dailink has playback support */
 		.ignore_pmdown_time = 1,
-		.ignore_suspend = 1,
+		/* This dainlink has MI2S support */
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
 	},
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/08/21 end */
 };
 static struct snd_soc_dai_link msm8952_hdmi_dba_dai_link[] = {
 	{
@@ -2675,6 +2798,7 @@ static struct snd_soc_dai_link msm8952_hdmi_dba_dai_link[] = {
 	},
 };
 static struct snd_soc_dai_link msm8952_quin_dai_link[] = {
+#if 0
 	{
 		.name = LPASS_BE_QUIN_MI2S_RX,
 		.stream_name = "Quinary MI2S Playback",
@@ -2690,6 +2814,26 @@ static struct snd_soc_dai_link msm8952_quin_dai_link[] = {
 		.ignore_pmdown_time = 1, /* dai link has playback support */
 		.ignore_suspend = 1,
 	},
+#else
+	{
+		.name = LPASS_BE_QUIN_MI2S_RX,
+		.stream_name = "Quinary MI2S Playback",
+		.cpu_dai_name = "msm-dai-q6-mi2s.4",
+		.platform_name = "msm-pcm-routing",
+		.codec_dai_name = "tfa98xx-aif-5-34",
+		.codec_name = "tfa98xx.5-0034",
+		//.codecs = tfa98xx_codecs,
+		//.num_codecs = 1,
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.id = MSM_BACKEND_DAI_QUINARY_MI2S_RX,
+		.be_hw_params_fixup = msm_quin_mi2s_rx_be_hw_params_fixup,
+		.ops = &msm8952_quin_mi2s_be_ops,
+		.ignore_pmdown_time = 1, /* dai link has playback support */
+		.ignore_suspend = 1,
+	},
+#endif
+
 };
 
 static struct snd_soc_dai_link msm8952_split_a2dp_dai_link[] = {
