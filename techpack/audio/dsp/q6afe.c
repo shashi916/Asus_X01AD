@@ -28,7 +28,7 @@
 #include <dsp/q6core.h>
 
 /* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
-#ifdef CONFIG_SND_SOC_TFA98XX
+#ifdef CONFIG_SND_SOC_TFA9874
 #define AFE_MODULE_ID_TFADSP_RX		(0x1000B911)
 #define AFE_MODULE_ID_TFADSP_TX		(0x1000B912)
 #define AFE_PARAM_ID_TFADSP_TX_SET_ENABLE		(0x1000B920)
@@ -137,7 +137,7 @@ struct afe_ctl {
 	int dev_acdb_id[AFE_MAX_PORTS];
 	routing_cb rt_cb;
 /* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
-#ifdef CONFIG_SND_SOC_TFA98XX
+#ifdef CONFIG_SND_SOC_TFA9874
 	struct rtac_cal_block_data tfa_cal;
 	atomic_t tfa_state;
 #endif
@@ -405,7 +405,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 						    data->payload_size);
 		} else {
 /* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
-		#ifdef CONFIG_SND_SOC_TFA98XX
+		#ifdef CONFIG_SND_SOC_TFA9874
 		if (atomic_read(&this_afe.tfa_state) == 1) {
 			if (data->payload_size == sizeof(uint32_t))
 				atomic_set(&this_afe.status, payload[0]);
@@ -454,7 +454,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 					data->payload_size))
 					return 0;
 			/* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
-			#ifdef CONFIG_SND_SOC_TFA98XX
+			#ifdef CONFIG_SND_SOC_TFA9874
 				if (atomic_read(&this_afe.tfa_state) == 1) {
 					if (data->payload_size == sizeof(uint32_t))
 						atomic_set(&this_afe.status, payload[0]);
@@ -1157,7 +1157,7 @@ static int afe_spk_prot_prepare(int src_port, int dst_port, int param_id,
 		config.pdata.module_id = AFE_MODULE_SPEAKER_PROTECTION_V2_EX_VI;
 		break;
 /* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 start */
-#ifdef CONFIG_SND_SOC_TFA98XX
+#ifdef CONFIG_SND_SOC_TFA9874
 	case AFE_PARAM_ID_TFADSP_RX_CFG:
 	case AFE_PARAM_ID_TFADSP_RX_SET_BYPASS:
 		config.pdata.module_id = AFE_MODULE_ID_TFADSP_RX;
@@ -1165,7 +1165,7 @@ static int afe_spk_prot_prepare(int src_port, int dst_port, int param_id,
 	case AFE_PARAM_ID_TFADSP_TX_SET_ENABLE:
 		config.pdata.module_id = AFE_MODULE_ID_TFADSP_TX;
 		break;
-#endif	/*CONFIG_SND_SOC_TFA98XX*/
+#endif	/*CONFIG_SND_SOC_TFA9874*/
 /* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 end */
 	default:
 		pr_err("%s: default case 0x%x\n", __func__, param_id);
@@ -8104,7 +8104,7 @@ done:
 }
 
 /* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
-#ifdef CONFIG_SND_SOC_TFA98XX
+#ifdef CONFIG_SND_SOC_TFA9874
 static int fill_afe_apr_hdr(struct apr_hdr *apr_hdr, uint32_t port,
 			 uint32_t opcode, uint32_t apr_msg_size)
 {
@@ -8353,7 +8353,7 @@ int send_tfa_cal_set_tx_enable(void *buf, int cmd_size)
 }
 EXPORT_SYMBOL(send_tfa_cal_set_tx_enable);
 
-#endif /*CONFIG_SND_SOC_TFA98XX*/
+#endif /*CONFIG_SND_SOC_TFA9874*/
 /* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 end */
 /* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 end */
 
@@ -8397,7 +8397,7 @@ void afe_exit(void)
 		rtac_set_afe_handle(this_afe.apr);
 	}
 /* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
-#ifdef CONFIG_SND_SOC_TFA98XX
+#ifdef CONFIG_SND_SOC_TFA9874
 	afe_unmap_rtac_block(&this_afe.tfa_cal.map_data.map_handle);
 #endif
 /* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 end */
