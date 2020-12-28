@@ -559,7 +559,7 @@ static ssize_t tfa98xx_dbgfs_start_set(struct file *file,
 	if (ret == tfa_error_ok)
 		ret = tfa98xx_tfa_start(tfa98xx, tfa98xx->profile, tfa98xx->vstep);
 	if (ret == tfa_error_ok)
-			tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE);
+			tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE,0);
 	mutex_unlock(&tfa98xx->dsp_lock);
 
 	if (ret) {
@@ -1020,23 +1020,23 @@ static void tfa98xx_debug_init(struct tfa98xx *tfa98xx, struct i2c_client *i2c)
 	scnprintf(name, MAX_CONTROL_NAME, "%s-%x", i2c->name, i2c->addr);
 	tfa98xx->dbg_dir = debugfs_create_dir(name, NULL);
 /* Huaqin modify for M1852-493 by lanshiming at 2018/06/09 start*/
-	debugfs_create_file("OTC", S_IRUGO, tfa98xx->dbg_dir,
+	debugfs_create_file("OTC", S_IRUGO|S_IWUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_calib_otc_fops);
-	debugfs_create_file("MTPEX", S_IRUGO, tfa98xx->dbg_dir,
+	debugfs_create_file("MTPEX", S_IRUGO|S_IWUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_calib_mtpex_fops);
-	debugfs_create_file("TEMP", S_IRUGO, tfa98xx->dbg_dir,
+	debugfs_create_file("TEMP", S_IRUGO|S_IWUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_calib_temp_fops);
-	debugfs_create_file("calibrate", S_IRUGO, tfa98xx->dbg_dir,
+	debugfs_create_file("calibrate", S_IRUGO|S_IWUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_calib_start_fops);
 	debugfs_create_file("R", S_IRUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_r_fops);
 	debugfs_create_file("version", S_IRUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_version_fops);
-	debugfs_create_file("dsp-state", S_IRUGO, tfa98xx->dbg_dir,
+	debugfs_create_file("dsp-state", S_IRUGO|S_IWUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_dsp_state_fops);
-	debugfs_create_file("fw-state", S_IRUGO, tfa98xx->dbg_dir,
+	debugfs_create_file("fw-state", S_IRUGO|S_IWUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_fw_state_fops);
-	debugfs_create_file("rpc", S_IRUGO, tfa98xx->dbg_dir,
+	debugfs_create_file("rpc", S_IRUGO|S_IWUGO, tfa98xx->dbg_dir,
 						i2c, &tfa98xx_dbgfs_rpc_fops);
 /* Huaqin modify for M1852-493 by lanshiming at 2018/06/09 end*/
 	if (tfa98xx->flags & TFA98XX_FLAG_SAAM_AVAILABLE) {
@@ -1270,7 +1270,7 @@ static int tfa98xx_set_vstep(struct snd_kcontrol *kcontrol,
 	if (change) {
 		list_for_each_entry(tfa98xx, &tfa98xx_device_list, list) {
 			mutex_lock(&tfa98xx->dsp_lock);
-			tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE);
+			tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE,0);
 			mutex_unlock(&tfa98xx->dsp_lock);
 		}
 	}
@@ -1383,7 +1383,7 @@ static int tfa98xx_set_profile(struct snd_kcontrol *kcontrol,
 	if (change) {
 		list_for_each_entry(tfa98xx, &tfa98xx_device_list, list) {
 			mutex_lock(&tfa98xx->dsp_lock);
-			tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE);
+			tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE,0);
 			mutex_unlock(&tfa98xx->dsp_lock);
 		}
 	}
@@ -2534,7 +2534,7 @@ static void tfa98xx_dsp_init(struct tfa98xx *tfa98xx)
 			tfa98xx_sync_count = 0;
 			list_for_each_entry(tfa98xx, &tfa98xx_device_list, list) {
 				mutex_lock(&tfa98xx->dsp_lock);
-				tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE);
+				tfa_dev_set_state(tfa98xx->tfa, TFA_STATE_UNMUTE,0);
 
 				/*
 				 * start monitor thread to check IC status bit
