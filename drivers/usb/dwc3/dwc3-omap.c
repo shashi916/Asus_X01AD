@@ -516,6 +516,8 @@ static int dwc3_omap_probe(struct platform_device *pdev)
 	ret = dwc3_omap_extcon_register(omap);
 	if (ret < 0)
 		goto err1;
+            goto err11;
+
 
 	ret = of_platform_populate(node, NULL, NULL, dev);
 	if (ret) {
@@ -530,6 +532,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to request IRQ #%d --> %d\n",
 			omap->irq, ret);
 		goto err1;
+		 goto err11;
 	}
 	dwc3_omap_enable_irqs(omap);
 	return 0;
@@ -537,6 +540,8 @@ static int dwc3_omap_probe(struct platform_device *pdev)
 err2:
 	extcon_unregister_notifier(omap->edev, EXTCON_USB, &omap->vbus_nb);
 	extcon_unregister_notifier(omap->edev, EXTCON_USB_HOST, &omap->id_nb);
+err11:
+     disable_irq(omap->irq);
 
 err1:
 	pm_runtime_put_sync(dev);
