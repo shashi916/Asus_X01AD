@@ -1,17 +1,10 @@
 /*
- * Copyright 2014-2017 NXP Semiconductors
+ * Copyright (C) 2014 NXP Semiconductors, All Rights Reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 #include "dbgprint.h"
@@ -2777,7 +2770,7 @@ enum Tfa98xx_Error tfaRunStartup(struct tfa_device *tfa, int profile)
 	tfa98xx_factory_trimmer(tfa);
 
 	/* Go to the initCF state */
-	tfa_dev_set_state(tfa, TFA_STATE_INIT_CF);
+	tfa_dev_set_state(tfa, TFA_STATE_INIT_CF, strstr(tfaContProfileName(tfa->cnt, tfa->dev_idx, profile), ".cal") != NULL);
 
 	err = show_current_state(tfa);
 
@@ -3009,7 +3002,7 @@ enum tfa_error tfa_dev_start(struct tfa_device *tfa, int next_profile, int vstep
 		tfa98xx_set_osc_powerdown(tfa, 0);
 
 		/* Go to the Operating state */
-		tfa_dev_set_state(tfa, TFA_STATE_OPERATING | TFA_STATE_MUTE);
+		tfa_dev_set_state(tfa, TFA_STATE_OPERATING | TFA_STATE_MUTE,0);
 		}
 		active_profile = tfa_dev_get_swprof(tfa);
 
@@ -3539,7 +3532,7 @@ int tfa_dev_probe(int slave, struct tfa_device *tfa)
 	return 0;
 }
 
-enum tfa_error tfa_dev_set_state(struct tfa_device *tfa, enum tfa_state state)
+enum tfa_error tfa_dev_set_state(struct tfa_device *tfa, enum tfa_state state, int is_calibration)
 {
 	enum tfa_error err = tfa_error_ok;
 	int loop = 50, ready = 0;
@@ -3841,7 +3834,7 @@ int tfa_plop_noise_interrupt(struct tfa_device *tfa, int profile, int vstep)
 				pr_err("Error loading i2c registers (tfa_dev_start), err=%d\n", err);
 			} else {
 				pr_info("Setting i2c registers after I2CR succesfull\n");
-				tfa_dev_set_state(tfa, TFA_STATE_UNMUTE);
+				tfa_dev_set_state(tfa, TFA_STATE_UNMUTE,0);
 			}
 
 			/* Remove sticky bit by reading it once */
