@@ -4906,18 +4906,7 @@ static int resotre_bat_health(void)
 	return 0;
 }
 
-static int modify_bat_health_data(void)
-{
-	int i=0;
 
-	for(i=1; i<BAT_HEALTH_NUMBER_MAX-1;i++){
-		sprintf(g_bat_health_data_backup[i].date, "%s", g_bat_health_data_backup[i+1].date);
-		g_bat_health_data_backup[i].health = g_bat_health_data_backup[i+1].health;
-	}
-	memset(&g_bat_health_data_backup[BAT_HEALTH_NUMBER_MAX-1], 0, sizeof(struct BAT_HEALTH_DATA_BACKUP));
-
-	return 0;
-}
 
 static int backup_bat_health(void)
 {
@@ -4933,9 +4922,9 @@ static int backup_bat_health(void)
 
 	bat_health = g_bat_health_data.bat_health;
 
-	if(g_health_upgrade_index >= BAT_HEALTH_NUMBER_MAX-1){
-		g_health_upgrade_index = BAT_HEALTH_NUMBER_MAX-1;
-		modify_bat_health_data();
+		if(g_health_upgrade_index == BAT_HEALTH_NUMBER_MAX-1){
+		g_health_upgrade_index = 1;
+
 	}else{
 		g_health_upgrade_index++;
 	}
