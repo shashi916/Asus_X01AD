@@ -466,8 +466,17 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 		line = strchr(prop_buf, '\n');
 		if (line)
 			*line = 0;
-printk("ptr = %p\n", attr->attr.name);
-printk("str = %s\n", attr->attr.name ? attr->attr.name : "null");
+
+			
+	      if (attr->attr.name == NULL)
+              continue;
+
+               attrname = kstruprdup(attr->attr.name, GFP_KERNEL);
+                if (!attrname) {
+                 ret = -ENOMEM;
+                  goto out;
+          }
+
 
 		attrname = kstruprdup(attr->attr.name, GFP_KERNEL);
 		if (!attrname) {
