@@ -1,10 +1,18 @@
-/*
- * Copyright (C) 2014 NXP Semiconductors, All Rights Reserved.
+/* 
+ * Copyright (C) 2014-2020 NXP Semiconductors, All Rights Reserved.
+ * Copyright 2020 GOODIX 
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
+ */
+
+/*
+ * tfa_ext.h
+ *
+ *  Created on: Jun 8, 2016
+ *      Author: wim
  */
 
 #ifndef TFA_SRC_TFA_EXT_H_
@@ -20,7 +28,8 @@
 /**
 This enum type specifies the different events that may trigger a callback.
 */
-enum tfadsp_event_en {
+enum tfadsp_event_en
+{
  TFADSP_CMD_ACK         =  1,   /**< Command handling is completed */
  TFADSP_SOFT_MUTE_READY     =  8,   /**< Muting completed */
  TFADSP_VOLUME_READY        = 16,   /**< Volume change completed */
