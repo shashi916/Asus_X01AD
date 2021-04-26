@@ -93,6 +93,8 @@ static ssize_t power_supply_show_property(struct device *dev,
 	} else {
 		ret = power_supply_get_property(psy, off, &value);
 
+
+
 		if (ret < 0) {
 			if (ret == -ENODATA)
 				dev_dbg(dev, "driver has no data for `%s' property\n",
@@ -467,6 +469,7 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 			*line = 0;
     
 
+			
 	      if (attr->attr.name == NULL)
               continue;
 
@@ -474,8 +477,14 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
                 if (!attrname) {
                  ret = -ENOMEM;
                   goto out;
-          }  
-    
+          }
+
+
+		attrname = kstruprdup(attr->attr.name, GFP_KERNEL);
+		if (!attrname) {
+			ret = -ENOMEM;
+			goto out;
+		}
 
 	
 		ret = add_uevent_var(env, "POWER_SUPPLY_%s=%s", attrname, prop_buf);

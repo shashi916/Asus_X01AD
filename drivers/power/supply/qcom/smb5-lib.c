@@ -1893,12 +1893,8 @@ int smblib_get_prop_batt_status(struct smb_charger *chg,
 		return 0;
 	}
 
-	if (val->intval != POWER_SUPPLY_STATUS_CHARGING) {
-		if ((val->intval == POWER_SUPPLY_STATUS_FULL) && (usb_online || dc_online)) {
-			val->intval = POWER_SUPPLY_STATUS_CHARGING;
-		}
+	if (val->intval != POWER_SUPPLY_STATUS_CHARGING)
 		return 0;
-	}
 
 	if (!usb_online && dc_online
 		&& chg->fake_batt_status == POWER_SUPPLY_STATUS_FULL) {

@@ -162,7 +162,6 @@ struct qpnp_qg {
 	/* charge counter */
 	struct cycle_counter	*counter;
 	/* ttf */
-
 	struct ttf		*ttf;
 //cmadd ASUS_BSP battery safety upgrade +++  cmadd
 	unsigned long condition1_battery_time;

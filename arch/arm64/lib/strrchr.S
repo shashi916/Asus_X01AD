@@ -40,4 +40,4 @@ ENTRY(strrchr)
 	b	1b
 2:	mov	x0, x3
 	ret
-ENDPIPROC(strrchr)
+ENDPROC(strrchr)
