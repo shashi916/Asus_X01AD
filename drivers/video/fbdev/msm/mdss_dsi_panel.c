@@ -235,10 +235,10 @@ static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 			return;
 	}
 /* Huaqin modify for backlight Flicker by qimaokang at 2018/07/31 start*/
-	pr_err("%s: level=%d\n", __func__, level);
+	pr_debug("%s: level=%d\n", __func__, level);
 	led_pwm1[1] = (unsigned char)(level>>8);
 	led_pwm1[2] = (unsigned char)level;
-	pr_err("qimk h:%d l:%d\n",led_pwm1[1],led_pwm1[2]);
+	pr_debug("qimk h:%d l:%d\n",led_pwm1[1],led_pwm1[2]);
 /* Huaqin modify for backlight Flicker by qimaokang at 2018/07/31 end*/
 	memset(&cmdreq, 0, sizeof(cmdreq));
 	cmdreq.cmds = &backlight_cmd;
