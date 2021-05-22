@@ -121,7 +121,77 @@ static const struct tfa98xx_rate rate_to_fssel[] = {
 	{ 48000, 8 },
 };
 
+/* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 start */
+#ifdef CONFIG_SND_SOC_TFA9874
+static atomic_t g_bypass;
+static atomic_t g_Tx_enable;
 
+extern int send_tfa_cal_set_bypass(void *buf, int cmd_size);
+extern int send_tfa_cal_set_tx_enable(void *buf, int cmd_size);
+
+/*************bypass control***************/
+static int tfa987x_algo_get_status(struct snd_kcontrol *kcontrol,
+					   struct snd_ctl_elem_value *ucontrol)
+{
+	int32_t ret = 0;
+	ucontrol->value.integer.value[0] = atomic_read(&g_bypass);
+	return ret;
+}
+
+static int tfa987x_algo_set_status(struct snd_kcontrol *kcontrol,
+					   struct snd_ctl_elem_value *ucontrol)
+{
+	int32_t ret = 0;
+	u8 buff[56] = {0}, *ptr = buff;
+	((int32_t *)buff)[0] = ucontrol->value.integer.value[0];
+	pr_err("%s:status data %d\n", __func__, ((int32_t *)buff)[0]);
+	atomic_set(&g_bypass, ((int32_t *)buff)[0]);
+	ret = send_tfa_cal_set_bypass(ptr, 4);
+	return ret;
+}
+
+static int tfa987x_algo_set_tx_enable(struct snd_kcontrol *kcontrol,
+					   struct snd_ctl_elem_value *ucontrol)
+{
+	int32_t ret = 0;
+	u8 buff[56] = {0}, *ptr = buff;
+	((int32_t *)buff)[0] = ucontrol->value.integer.value[0];
+	pr_err("%s:set_tx_enable %d\n", __func__, ((int32_t *)buff)[0]);
+	atomic_set(&g_Tx_enable, ((int32_t *)buff)[0]);
+	ret = send_tfa_cal_set_tx_enable(ptr, 4);
+	return ret;
+}
+
+static int tfa987x_algo_get_tx_status(struct snd_kcontrol *kcontrol,
+					   struct snd_ctl_elem_value *ucontrol)
+{
+	int32_t ret = 0;
+	ucontrol->value.integer.value[0] = atomic_read(&g_Tx_enable);
+	return ret;
+}
+
+static const char *tfa987x_algo_text[] = {
+	"DISABLE", "ENABLE"
+};
+
+static const char *tfa987x_tx_text[] = {
+	"DISABLE", "ENABLE"
+};
+
+static const struct soc_enum tfa987x_algo_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(tfa987x_algo_text),tfa987x_algo_text)
+};
+
+static const struct soc_enum tfa987x_tx_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(tfa987x_tx_text),tfa987x_tx_text)
+};
+
+const struct snd_kcontrol_new tfa987x_algo_filter_mixer_controls[] = {
+	SOC_ENUM_EXT("TFA987X_ALGO_STATUS", tfa987x_algo_enum[0], tfa987x_algo_get_status, tfa987x_algo_set_status),
+	SOC_ENUM_EXT("TFA987X_TX_ENABLE", tfa987x_tx_enum[0], tfa987x_algo_get_tx_status, tfa987x_algo_set_tx_enable)
+};
+#endif
+/* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 end */
 static inline char *tfa_cont_profile_name(struct tfa98xx *tfa98xx, int prof_idx)
 {
 	if (tfa98xx->tfa->cnt == NULL)
@@ -688,7 +758,47 @@ static ssize_t tfa98xx_dbgfs_fw_state_get(struct file *file,
 
 	return simple_read_from_buffer(user_buf, count, ppos, str, strlen(str));
 }
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
+#ifdef CONFIG_SND_SOC_TFA9874
+extern int send_tfa_cal_apr(void *buf, int cmd_size, bool bRead);
+#endif
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 end */
+#ifdef CONFIG_SND_SOC_TFA9874
+static ssize_t tfa98xx_dbgfs_rpc_read(struct file *file,
+				     char __user *user_buf, size_t count,
+				     loff_t *ppos)
+{
+	struct i2c_client *i2c = file->private_data;
+	struct tfa98xx *tfa98xx = i2c_get_clientdata(i2c);
+	int ret = 0;
+	uint8_t *buffer;
 
+	buffer = kmalloc(count, GFP_KERNEL);
+	if (buffer == NULL) {
+		pr_err("[0x%x] can not allocate memory\n", i2c->addr);
+		return -ENOMEM;
+	}
+
+	mutex_lock(&tfa98xx->dsp_lock);
+
+	ret = send_tfa_cal_apr(buffer, count, true);
+
+	mutex_unlock(&tfa98xx->dsp_lock);
+	if (ret) {
+		pr_err("[0x%x] dsp_msg_read error: %d\n", i2c->addr, ret);
+		kfree(buffer);
+		return -EFAULT;
+	}
+
+	ret = copy_to_user(user_buf, buffer, count);
+	kfree(buffer);
+	if (ret)
+		return -EFAULT;
+
+	*ppos += count;
+	return count;
+}
+#else
 static ssize_t tfa98xx_dbgfs_rpc_read(struct file *file,
 	char __user *user_buf, size_t count,
 	loff_t *ppos)
@@ -730,6 +840,7 @@ static ssize_t tfa98xx_dbgfs_rpc_read(struct file *file,
 	*ppos += count;
 	return count;
 }
+#endif
 
 static ssize_t tfa98xx_dbgfs_rpc_send(struct file *file,
 	const char __user *user_buf,
@@ -1413,7 +1524,9 @@ static int tfa98xx_get_cal_ctl(struct snd_kcontrol *kcontrol,
 static int tfa98xx_create_controls(struct tfa98xx *tfa98xx)
 {
 	int prof, nprof, mix_index = 0;
-	int  nr_controls = 0, id = 0;
+/* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 start */
+	int  nr_controls = 0, id = 0, ret = 0;
+/* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 end */
 	char *name;
 	struct tfa98xx_baseprofile *bprofile;
 
@@ -1423,7 +1536,9 @@ static int tfa98xx_create_controls(struct tfa98xx *tfa98xx)
 	 *  - Stop control on TFA1 devices
 	 */
 
-	nr_controls = 2; /* Profile and stop control */
+	/* Huaqin add for prevent alloc memory overflow start */
+	nr_controls = 4; /* Profile and stop control */
+	/* Huaqin add for prevent alloc memory overflow end */
 
 	if (tfa98xx->flags & TFA98XX_FLAG_CALIBRATION_CTL)
 		nr_controls += 1; /* calibration */
@@ -1534,14 +1649,17 @@ static int tfa98xx_create_controls(struct tfa98xx *tfa98xx)
 		mix_index++;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,18,0)
-	return snd_soc_add_component_controls(tfa98xx->codec,
+/* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 start */
+	ret = snd_soc_add_codec_controls(tfa98xx->codec,
 		tfa98xx_controls, mix_index);
-#else
-	return snd_soc_add_codec_controls(tfa98xx->codec,
-		tfa98xx_controls, mix_index);
+
+#ifdef CONFIG_SND_SOC_TFA9874
+	ret = snd_soc_add_codec_controls(tfa98xx->codec,
+		tfa987x_algo_filter_mixer_controls, ARRAY_SIZE(tfa987x_algo_filter_mixer_controls));
 #endif
+	return ret;
 }
+/* Huaqin add for  nxp pa bypass function by zhengwu at 2018/07/04 end */
 
 static void *tfa98xx_devm_kstrdup(struct device *dev, char *buf)
 {
@@ -2150,13 +2268,19 @@ static void tfa98xx_container_loaded(const struct firmware *cont, void *context)
 	}
 
 	/* Preload settings using internal clock on TFA2 */
-	if (tfa98xx->tfa->tfa_family == 2) {
+
+/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+	if (tfa98xx->tfa->tfa_family == 2 && tfa98xx->tfa->is_probus_device == 1) {
 		mutex_lock(&tfa98xx->dsp_lock);
 		ret = tfa98xx_tfa_start(tfa98xx, tfa98xx->profile, tfa98xx->vstep);
 		if (ret == Tfa98xx_Error_Not_Supported)
 			tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_FAIL;
+		tfa_dev_stop(tfa98xx->tfa);
+		tfa98xx->dsp_init = TFA98XX_DSP_INIT_STOPPED;
 		mutex_unlock(&tfa98xx->dsp_lock);
-	}		
+	}
+/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
+
 	tfa98xx_interrupt_enable(tfa98xx, true);
 }
 
@@ -2598,6 +2722,15 @@ static int tfa98xx_hw_params(struct snd_pcm_substream *substream,
 	}
 	pr_debug("mixer profile:container profile = [%d:%d]\n", tfa98xx_mixer_profile, prof_idx);
 
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+	if(snd_pcm_format_width(params_format(params)) == 24){
+		tfa98xx_set_format(tfa98xx->tfa, 1);
+	} else if(snd_pcm_format_width(params_format(params)) == 16){
+		tfa98xx_set_format(tfa98xx->tfa, 0);
+	}else{
+		pr_err("tfa98xx: invalid bit\n");
+	}
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
 
 	/* update 'real' profile (container profile) */
 	tfa98xx->profile = prof_idx;
@@ -2607,6 +2740,63 @@ static int tfa98xx_hw_params(struct snd_pcm_substream *substream,
 
 	return 0;
 }
+
+#ifdef CONFIG_SND_SOC_TFA9874
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 start */
+extern int send_tfa_cal_in_band(void *buf, int cmd_size);
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/05/03 end */
+static uint8_t bytes[3*3+1] = {0};
+
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/08/15 start */
+
+#define MONO_I2C_ADDR (0x34)
+#define IMPEDANCE_VALUE (4000) /*or 20000*/
+static enum Tfa98xx_Error tfa98xx_adsp_send_calib_values(struct tfa98xx *tfa98xx)
+{
+	int ret = 0;
+	struct tfa_device *tfa = tfa98xx->tfa;
+	int value = 0, nr, dsp_cal_value = 0;
+
+	if (TFA_GET_BF(tfa, MTPEX) == 1 && tfa98xx->i2c->addr == MONO_I2C_ADDR)
+	{
+		value = tfa_dev_mtp_get(tfa, TFA_MTP_RE25);
+		dsp_cal_value = (value * 65536) / 1000;
+
+		nr = 4;
+		/* We have to copy it for both channels. Even when mono! */
+		bytes[nr++] = (uint8_t)((dsp_cal_value >> 16) & 0xff);
+		bytes[nr++] = (uint8_t)((dsp_cal_value >> 8) & 0xff);
+		bytes[nr++] = (uint8_t)(dsp_cal_value & 0xff);
+
+		dev_err(&tfa98xx->i2c->dev, "%s: cal value 0x%x\n", __func__, dsp_cal_value);
+
+		bytes[nr++] = bytes[4];
+		bytes[nr++] = bytes[5];
+		bytes[nr++] = bytes[6];
+		/* RDC */
+		if (value > IMPEDANCE_VALUE)
+			bytes[0] |= 0x11;
+	}
+
+	if (bytes[0] == 0x11)
+	{
+		nr = 1;
+		bytes[nr++] = 0x00;
+		bytes[nr++] = 0x81;
+		bytes[nr++] = 0x05;
+
+		dev_err(&tfa98xx->i2c->dev, "%s: send_tfa_cal_in_band \n", __func__);
+
+		ret = send_tfa_cal_in_band(&bytes[1], sizeof(bytes) - 1);
+
+		bytes[0] = 0;
+	}
+
+	return ret;
+}
+
+#endif
+/* Huaqin add for active nxp pa cal function by zhengwu at 2018/08/15 end */
 
 static int tfa98xx_mute(struct snd_soc_dai *dai, int mute, int stream)
 {
@@ -2703,10 +2893,14 @@ static struct snd_soc_dai_driver tfa98xx_dai[] = {
 		 },
 		.ops = &tfa98xx_dai_ops,
 		.symmetric_rates = 1,
+/* Huaqin add for  nxp pa  by zhengwu at 2018/06/21 start */
+#if 0
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0)
 		.symmetric_channels = 1,
 		.symmetric_samplebits = 1,
 #endif
+#endif
+/* Huaqin add for  nxp pa  by zhengwu at 2018/06/21 end */
 	},
 };
 

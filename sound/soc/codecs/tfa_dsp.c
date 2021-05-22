@@ -957,6 +957,49 @@ static short twos(short x)
 	return (x < 0) ? x + 512 : x;
 }
 
+/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+
+int tfa_set_format_flag = 0;
+void tfa98xx_set_format(struct tfa_device *tfa, int val)
+{
+	int value= -1;
+
+	value = tfa_is_cold(tfa);
+
+	pr_err("tfa98xx_set_format, value = %d\n",value);
+
+	if(TFA_GET_BF(tfa,PWDN)){
+		if(val == 1){
+
+			if (value ==1) {
+				tfa_set_format_flag = 1;
+			}else if(value ==0){
+				TFA_SET_BF(tfa, TDMNBCK1, 2);
+				TFA_SET_BF(tfa, TDMSLLN1, 31);
+/* Huaqin add for nxp 24bit playback update by zhengwu at 2018/12/13 start */
+				TFA_SET_BF(tfa, TDMSSIZE1, 31);
+/* Huaqin add for nxp 24bit playback update by zhengwu at 2018/12/13 end */
+			}
+			printk("tfa98xx_set_format to 24 bit\n");
+
+		}else if(val == 0){
+
+			if (value ==1) {
+				tfa_set_format_flag = 0;
+			}else if(value ==0){
+				TFA_SET_BF(tfa, TDMNBCK1, 0);
+				TFA_SET_BF(tfa, TDMSLLN1, 15);
+				TFA_SET_BF(tfa, TDMSSIZE1, 15);
+			}
+			printk("tfa98xx_set_format to 16 bit\n");
+
+		}
+	}else{
+		printk("tfa98xx_set_format could not set format\n");
+	}
+}
+/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
+
 void tfa98xx_set_exttemp(struct tfa_device *tfa, short ext_temp)
 {
 	if ((-256 <= ext_temp) && (ext_temp <= 255)) {
@@ -3274,6 +3317,9 @@ error_exit:
 enum tfa_error tfa_dev_stop(struct tfa_device *tfa)
 {
 	enum Tfa98xx_Error err = Tfa98xx_Error_Ok;
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+	int times = 0, ready;
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
 
 	/* mute */
 	tfaRunMute(tfa);
@@ -3288,6 +3334,24 @@ enum tfa_error tfa_dev_stop(struct tfa_device *tfa)
 
 	/* disable I2S output on TFA1 devices without TDM */
 	err = tfa98xx_aec_output(tfa, 0);
+
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+	while ((TFA_GET_BF(tfa, MANSTATE) != 0) && (times++ < 20)) {
+		pr_info("tfa stop wait state machine goto powerdown mode.\n");
+		err = tfa98xx_dsp_system_stable(tfa, &ready);
+		if (err != Tfa98xx_Error_Ok || !ready) {
+			pr_err("tfa stop: No I2S CLK\n");
+			break;
+		}
+		msleep_interruptible(5);
+	}
+
+	if (times < 20) {
+		pr_err("tfa stop: already in PowerDown\n");
+	} else {
+		pr_err("tfa stop: Not in PowerDown\n");
+	}
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
 
 	return err;
 }

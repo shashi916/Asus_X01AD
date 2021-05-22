@@ -195,6 +195,11 @@ typedef enum Tfa1BfEnumList {
     TFA1_BF_ACK   = 0x7387,    /*!< acknowledge of requests (8 channels)               */
     TFA1_BF_MTPOTC= 0x8000,    /*!< Calibration schedule (key2 protected)              */
     TFA1_BF_MTPEX = 0x8010,    /*!< (key2 protected)                                   */
+    /* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+    TFA1_BF_TDMNBCK1 = 0x20c3,    /*!< N-BCK's in FS                                   */
+    TFA1_BF_TDMSLLN1 = 0x2144,    /*!< N-bits in slot                              	 */
+    TFA1_BF_TDMSSIZE1 = 0x2224,   /*!< Sample size per slot                            */
+    /* huaqin add for 1246411 by xudayi at 2018/11/06 end */
 } Tfa1BfEnumList_t;
 #define TFA1_NAMETABLE static tfaBfName_t Tfa1DatasheetNames[]= {\
    { 0x0, "VDDS"},    /* Power-on-reset flag                               , */\

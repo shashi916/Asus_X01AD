@@ -406,6 +406,11 @@ typedef enum Tfa2BfEnumList {
     TFA2_BF_USERDEF= 0xf042,    /*!< Calibration delta current limit DCDC               */
     TFA2_BF_R25CL = 0xf40f,    /*!< Ron resistance of left channel speaker coil        */
     TFA2_BF_R25CR = 0xf50f,    /*!< Ron resistance of right channel speaker coil       */
+    /* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+    TFA2_BF_TDMNBCK1 = 0x20c3,    /*!< N-BCK's in FS                                    */
+    TFA2_BF_TDMSLLN1 = 0x2144,    /*!< N-bits in slot                              	  */
+    TFA2_BF_TDMSSIZE1 = 0x2224,   /*!< Sample size per slot                             */
+    /* huaqin add for 1246411 by xudayi at 2018/11/06 end */
 } Tfa2BfEnumList_t;
 #define TFA2_NAMETABLE static tfaBfName_t Tfa2DatasheetNames[]= {\
    { 0x0, "PWDN"},    /* Powerdown selection                               , */\

@@ -22,6 +22,10 @@
 /* module globals */
 static uint8_t gslave_address = 0; /* This is used to SET the slave with the --slave option */
 
+/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+extern int tfa_set_format_flag;
+/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
+
 static int float_to_int(uint32_t x)
 {
 	unsigned e = (0x7F + 31) - ((*(unsigned *)&x & 0x7F800000) >> 23);
@@ -1135,6 +1139,22 @@ enum Tfa98xx_Error tfaContWriteRegsDev(struct tfa_device *tfa)
 
 		if (err) break;
 	}
+
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 start */
+	if(tfa_set_format_flag == 1){
+		TFA_SET_BF(tfa, TDMNBCK1, 2);
+		TFA_SET_BF(tfa, TDMSLLN1, 31);
+/* Huaqin add for nxp 24bit playback update by zhengwu at 2018/12/13 start */
+		TFA_SET_BF(tfa, TDMSSIZE1, 31);
+/* Huaqin add for nxp 24bit playback update by zhengwu at 2018/12/13 end */
+		printk(" tfaContWriteRegsDev tfa98xx_set_format to 24 bit\n");
+	}else if(tfa_set_format_flag == 0) {
+		TFA_SET_BF(tfa, TDMNBCK1, 0);
+		TFA_SET_BF(tfa, TDMSLLN1, 15);
+		TFA_SET_BF(tfa, TDMSSIZE1, 15);
+		printk(" tfaContWriteRegsDev tfa98xx_set_format to 16 bit\n");
+	}
+	/* huaqin add for 1246411 by xudayi at 2018/11/06 end */
 
 	return err;
 }
